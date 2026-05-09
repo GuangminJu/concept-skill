@@ -92,6 +92,8 @@ export async function conceptTaskPrepare(
       "Map the task to existing concepts before changing design or code.",
       "Propose missing concepts explicitly before using them.",
       "Record any concept ambiguity instead of silently collapsing boundaries.",
+      "Require higher-level concepts to name the lower-level concepts that support them.",
+      "Treat concrete gameplay specializations over generic mechanisms as concept errors.",
       "Only implement after concept ownership and boundaries are explicit."
     ],
     concept_snapshot: {
@@ -109,7 +111,7 @@ export async function conceptTaskPrepare(
       },
       {
         action: "validate_conflicts_if_needed",
-        description: "If any concept ownership looks ambiguous, run concept conflict validation before proceeding."
+        description: "If any concept ownership, hierarchy support, or specialization looks ambiguous, run concept conflict validation before proceeding."
       },
       {
         action: "implement_after_concept_alignment",
@@ -141,12 +143,14 @@ export function conceptGovernanceActivate(
       : "No concept files were supplied, so the project can remain in standard mode.",
     concept_files: input.concept_files,
     required_workflow: conceptGoverned
-      ? [
-          "Read concept files before planning or coding.",
-          "Call concept_task_prepare before design, analysis, or implementation tasks.",
-          "Propose new concepts explicitly instead of inventing them silently.",
-          "Call concept_conflict_validate when ownership or boundaries look ambiguous."
-        ]
+        ? [
+            "Read concept files before planning or coding.",
+            "Call concept_task_prepare before design, analysis, or implementation tasks.",
+            "Propose new concepts explicitly instead of inventing them silently.",
+            "Require higher-level concepts to be supported by lower-level concepts.",
+            "Treat concrete gameplay specializations over generic mechanisms as errors.",
+            "Call concept_conflict_validate when ownership, hierarchy, or boundaries look ambiguous."
+          ]
       : [
           "Use standard workflow until concept files are supplied."
         ],
@@ -167,7 +171,7 @@ export function conceptGovernanceActivate(
           },
           {
             action: "call_concept_conflict_validate_if_needed",
-            description: "If reused and proposed concepts overlap, run concept_conflict_validate before proceeding.",
+            description: "If reused and proposed concepts overlap, lack lower-level support, or look like inflated specializations, run concept_conflict_validate before proceeding.",
             payload: { tool: "concept_conflict_validate", project_id: input.project_id }
           }
         ]

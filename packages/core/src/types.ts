@@ -5,6 +5,8 @@ export type ConflictType =
   | "duplicate-identity"
   | "alias-collision"
   | "boundary-overlap"
+  | "hierarchy-support-gap"
+  | "concept-inflation"
   | "layer-violation"
   | "state-model-mismatch"
   | "action-semantics-collision"
@@ -15,6 +17,7 @@ export type ConflictType =
 export type ConceptKind = "entity" | "value-object" | "state" | "action" | "event" | "boundary";
 export type ConceptLayer = "data" | "domain" | "application" | "interface" | "cross-cutting";
 export type ConceptStatus = "accepted" | "candidate" | "review-required";
+export type ConceptAbstractionLevel = "foundational" | "composite" | "specialized";
 
 export interface ConceptRecord {
   id: string;
@@ -26,6 +29,8 @@ export interface ConceptRecord {
   aliases: string[];
   status?: ConceptStatus;
   source_refs?: string[];
+  abstraction_level?: ConceptAbstractionLevel;
+  supported_by?: string[];
 }
 
 export interface RelationRecord {

@@ -1,4 +1,36 @@
-import type { AgentReviewPolicy, ConceptRecord, ConflictCandidate, RelationRecord, Severity } from "./types.js";
+import type {
+  AgentReviewPolicy,
+  ConceptLayer,
+  ConceptRecord,
+  ConflictCandidate,
+  RelationRecord,
+  Severity
+} from "./types.js";
+
+const FORWARD_SUPPORT_RELATION_TYPES = new Set([
+  "depends-on",
+  "uses",
+  "applies",
+  "annotated-by",
+  "validated-by",
+  "described-by",
+  "specializes",
+  "materializes-from",
+  "loads",
+  "delegates",
+  "contains",
+  "provides",
+  "scopes",
+  "obeys",
+  "targets",
+  "samples",
+  "hosts",
+  "supports-hook"
+]);
+
+const REVERSE_SUPPORT_RELATION_TYPES = new Set([
+  "instantiates"
+]);
 
 export function detectConflictCandidates(
   concepts: ConceptRecord[],
@@ -7,14 +39,28 @@ export function detectConflictCandidates(
   const candidates: ConflictCandidate[] = [];
   const byCanonicalName = new Map<string, ConceptRecord[]>();
   const byAlias = new Map<string, ConceptRecord[]>();
+  const byId = new Map<string, ConceptRecord>();
+  const supportMap = new Map<string, Set<string>>();
 
   for (const concept of concepts) {
+    byId.set(concept.id, concept);
+    supportMap.set(concept.id, new Set(concept.supported_by ?? []));
+
     const canonical = concept.name.trim().toLowerCase();
     byCanonicalName.set(canonical, [...(byCanonicalName.get(canonical) ?? []), concept]);
 
     for (const alias of concept.aliases) {
       const normalizedAlias = alias.trim().toLowerCase();
       byAlias.set(normalizedAlias, [...(byAlias.get(normalizedAlias) ?? []), concept]);
+    }
+  }
+
+  for (const relation of relations) {
+    if (FORWARD_SUPPORT_RELATION_TYPES.has(relation.type) && byId.has(relation.from) && byId.has(relation.to)) {
+      supportMap.get(relation.from)?.add(relation.to);
+    }
+    if (REVERSE_SUPPORT_RELATION_TYPES.has(relation.type) && byId.has(relation.from) && byId.has(relation.to)) {
+      supportMap.get(relation.to)?.add(relation.from);
     }
   }
 
@@ -71,6 +117,54 @@ export function detectConflictCandidates(
     }
   }
 
+  for (const concept of concepts) {
+    const supportIds = [...(supportMap.get(concept.id) ?? new Set<string>())]
+      .filter((id) => id !== concept.id && byId.has(id));
+    const supportConcepts = supportIds
+      .map((id) => byId.get(id))
+      .filter((item): item is ConceptRecord => Boolean(item));
+    const alignedSupport = supportConcepts.filter((support) => isSupportingLayer(support.layer, concept.layer));
+
+    if ((concept.abstraction_level === "composite" || concept.abstraction_level === "specialized") && alignedSupport.length === 0) {
+      candidates.push({
+        candidate_id: `hierarchy:${concept.id}`,
+        conflict_type: "hierarchy-support-gap",
+        severity: concept.abstraction_level === "specialized" ? "critical" : "high",
+        concept_ids: [concept.id],
+        title: `Hierarchy support gap for ${concept.name}`,
+        description:
+          "This higher-level concept is not supported by lower-level concepts. Composite and specialized concepts must be grounded in reusable lower-level concepts.",
+        machine_reason: [
+          `abstraction_level=${concept.abstraction_level}`,
+          "no lower-layer or same-layer support concepts found"
+        ],
+        evidence_refs: [`concept://${concept.id}`],
+        needs_agent_review: true
+      });
+    }
+
+    if (concept.abstraction_level === "specialized" && alignedSupport.length > 0) {
+      candidates.push({
+        candidate_id: `inflation:${concept.id}`,
+        conflict_type: "concept-inflation",
+        severity: "critical",
+        concept_ids: [concept.id, ...alignedSupport.map((support) => support.id)],
+        title: `Concept inflation detected for ${concept.name}`,
+        description:
+          "This concept is a specialization layered on top of reusable lower-level concepts. Concrete gameplay specializations should be composed from generic concepts, not registered as first-class concepts.",
+        machine_reason: [
+          "specialized concept declared",
+          `supported_by=${alignedSupport.map((support) => support.id).join(",")}`
+        ],
+        evidence_refs: [
+          `concept://${concept.id}`,
+          ...alignedSupport.map((support) => `concept://${support.id}`)
+        ],
+        needs_agent_review: true
+      });
+    }
+  }
+
   const relationPairs = new Set(relations.map((relation) => `${relation.from}:${relation.to}`));
   for (const relation of relations) {
     if (relation.from !== relation.to && relationPairs.has(`${relation.to}:${relation.from}`)) {
@@ -123,6 +217,16 @@ function dedupeCandidates(candidates: ConflictCandidate[]): ConflictCandidate[] 
     seen.add(candidate.candidate_id);
     return true;
   });
+}
+
+function isSupportingLayer(supportLayer: ConceptLayer, targetLayer: ConceptLayer): boolean {
+  if (supportLayer === "cross-cutting" || targetLayer === "cross-cutting") {
+    return true;
+  }
+
+  const order: Exclude<ConceptLayer, "cross-cutting">[] = ["data", "domain", "application", "interface"];
+  return order.indexOf(supportLayer as Exclude<ConceptLayer, "cross-cutting">) <=
+    order.indexOf(targetLayer as Exclude<ConceptLayer, "cross-cutting">);
 }
 
 function overlaps(leftBoundary: string, rightBoundary: string): boolean {

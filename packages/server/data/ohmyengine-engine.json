@@ -203,12 +203,14 @@
       "id": "gameplay-world-resource",
       "name": "WorldResource",
       "kind": "entity",
-      "definition": "Serialized asset object that identifies the level input used to build a world instance.",
-      "boundary": "Serialized resource that names the target level asset for world loading.",
+      "definition": "Serialized world root asset that identifies the base level input and optional entity manifest overlays used to build a world instance.",
+      "boundary": "Serialized world root naming the level reference and overlay file path.",
       "layer": "data",
-      "aliases": ["world asset"],
+      "aliases": ["world asset", "world composition root"],
       "status": "accepted",
-      "source_refs": ["source://engine/gameplay/include/ome/gameplay/world_resource.h#WorldResource"]
+      "source_refs": ["source://engine/gameplay/include/ome/gameplay/world_resource.h#WorldResource"],
+      "abstraction_level": "composite",
+      "supported_by": ["gameplay-level", "gameplay-entity-manifest"]
     },
     {
       "id": "gameplay-level",
@@ -220,6 +222,17 @@
       "aliases": ["world template", "level data"],
       "status": "accepted",
       "source_refs": ["source://engine/gameplay/include/ome/gameplay/level.h#Level"]
+    },
+    {
+      "id": "gameplay-entity-manifest",
+      "name": "EntityManifest",
+      "kind": "boundary",
+      "definition": "Declarative world composition document that appends authored entities, reflected components, and property values into a runtime world.",
+      "boundary": "Overlay schema, class identifiers, and field assignments for appended authored bundles.",
+      "layer": "data",
+      "aliases": ["world entity manifest", "composition manifest"],
+      "status": "accepted",
+      "source_refs": ["source://engine/gameplay/include/ome/gameplay/entity_manifest_loader.h#load_json_entity_manifest_into_world"]
     },
     {
       "id": "module-loaded-module",
@@ -468,7 +481,12 @@
       "to": "gameplay-level"
     },
     {
-      "from": "gameplay-level",
+      "from": "gameplay-world-resource",
+      "type": "applies",
+      "to": "gameplay-entity-manifest"
+    },
+    {
+      "from": "gameplay-entity-manifest",
       "type": "contains",
       "to": "encounter-zone"
     },
@@ -546,6 +564,11 @@
       "from": "ecs-world",
       "type": "materializes-from",
       "to": "gameplay-world-resource"
+    },
+    {
+      "from": "ecs-world",
+      "type": "materializes-from",
+      "to": "gameplay-entity-manifest"
     },
     {
       "from": "module-loaded-module",

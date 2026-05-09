@@ -79,6 +79,17 @@
       "source_refs": ["source://game/src/rogue_constants.h#packaged_or_dev_asset"]
     },
     {
+      "id": "world-composition-load",
+      "name": "WorldCompositionLoad",
+      "kind": "boundary",
+      "definition": "Startup handoff where RogueGame asks the engine to materialize the base world plus declared entity-manifest overlays.",
+      "boundary": "Startup world assembly through WorldResource, level loading, and declared entity-manifest application.",
+      "layer": "interface",
+      "aliases": ["world assembly load"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_game.cpp#load_world_into_world"]
+    },
+    {
       "id": "navigation-adapter",
       "name": "NavigationAdapter",
       "kind": "boundary",
@@ -99,6 +110,31 @@
       "aliases": ["game audio queue"],
       "status": "accepted",
       "source_refs": ["source://game/src/rogue_game.cpp#GameAudioRequest"]
+    },
+    {
+      "id": "encounter-manifest-validation",
+      "name": "EncounterManifestValidation",
+      "kind": "boundary",
+      "definition": "Game-specific validation pass that rejects incomplete authored encounter composition after world assembly.",
+      "boundary": "Room binding completeness, metadata completeness, stage completeness, source-lane completeness, and reinforcement trigger validity checks.",
+      "layer": "application",
+      "aliases": ["encounter validation"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_game.cpp#validate_encounter_world_manifest"]
+    },
+    {
+      "id": "encounter-projection",
+      "name": "EncounterProjection",
+      "kind": "boundary",
+      "definition": "Coordinator-side projection that reads authored encounter components and exposes scratch room and stage views to gameplay logic.",
+      "boundary": "Scratch-view adapter over authored encounter descriptors for runtime reads and coordinator encounter logic.",
+      "layer": "application",
+      "aliases": ["encounter scratch projection"],
+      "status": "accepted",
+      "source_refs": [
+        "source://game/src/rogue_game.cpp#current_room_template",
+        "source://game/src/rogue_game.cpp#current_stage_spec"
+      ]
     },
     {
       "id": "performance-record",
@@ -168,6 +204,11 @@
     },
     {
       "from": "game-module-boundary",
+      "type": "loads",
+      "to": "world-composition-load"
+    },
+    {
+      "from": "game-module-boundary",
       "type": "delegates",
       "to": "game-callbacks-boundary"
     },
@@ -185,6 +226,21 @@
       "from": "game-module-boundary",
       "type": "feeds",
       "to": "audio-request-queue"
+    },
+    {
+      "from": "world-composition-load",
+      "type": "validated-by",
+      "to": "encounter-manifest-validation"
+    },
+    {
+      "from": "game-module-boundary",
+      "type": "uses",
+      "to": "encounter-projection"
+    },
+    {
+      "from": "encounter-projection",
+      "type": "depends-on",
+      "to": "encounter-manifest-validation"
     },
     {
       "from": "ui-screen-copy-catalog",

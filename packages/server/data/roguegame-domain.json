@@ -24,15 +24,39 @@
       "source_refs": ["source://game/src/rogue_game.cpp#GamePhase"]
     },
     {
-      "id": "room-template",
-      "name": "RoomTemplate",
+      "id": "encounter-room",
+      "name": "EncounterRoom",
       "kind": "entity",
-      "definition": "Authored encounter recipe containing danger tier, objective type, spawn composition, and score target.",
-      "boundary": "Encounter recipe with threat tier, objective mode, spawn table, and score threshold.",
+      "definition": "World-authored room identity record that places one encounter into the run sequence.",
+      "boundary": "Room id, linear order slot, and grouping identity for one authored encounter room.",
       "layer": "domain",
-      "aliases": ["encounter template"],
+      "aliases": ["encounter room", "room encounter"],
       "status": "accepted",
-      "source_refs": ["source://game/src/rogue_game.cpp#room_templates"]
+      "source_refs": ["source://game/src/rogue_components.h#EncounterBindingComponent"],
+      "abstraction_level": "composite",
+      "supported_by": ["encounter-metadata", "stage-definition", "room-activation-profile"]
+    },
+    {
+      "id": "encounter-metadata",
+      "name": "EncounterMetadata",
+      "kind": "value-object",
+      "definition": "Room-authored descriptive and gameplay knobs projected from world composition into encounter behavior.",
+      "boundary": "Modifier labels, build routing tags, bonus knobs, goal selectors, and reinforcement defaults for one room.",
+      "layer": "domain",
+      "aliases": ["room metadata"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_components.h#EncounterMetadataComponent"]
+    },
+    {
+      "id": "stage-definition",
+      "name": "StageDefinition",
+      "kind": "value-object",
+      "definition": "Room-authored pacing and score envelope projected into a live stage runtime.",
+      "boundary": "Stage id, objective label, duration, score target, spawn cadence, alive cap, and reward or enemy budgets.",
+      "layer": "domain",
+      "aliases": ["stage spec"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_components.h#StageDefinitionComponent"]
     },
     {
       "id": "stage-runtime-state",
@@ -148,8 +172,8 @@
       "id": "room-activation-profile",
       "name": "RoomActivationProfile",
       "kind": "value-object",
-      "definition": "Selection rules mapping a room template to encounter-zone tags and enabled generator tags inside the world.",
-      "boundary": "Selection rules for encounter zone tags, enabled generators, excluded tags, and startup activations.",
+      "definition": "Selection rules mapping an encounter room to authored opening, active, and reinforcement source groups inside the world.",
+      "boundary": "Selection rules for opening, active, and reinforcement source groups, exclusions, and startup activations.",
       "layer": "domain",
       "aliases": ["activation profile"],
       "status": "accepted",
@@ -171,7 +195,7 @@
       "name": "ObjectiveSpawnModifier",
       "kind": "value-object",
       "definition": "Objective-state rule set that changes source eligibility, reinforcement emphasis, and unresolved penalties.",
-      "boundary": "Objective-state gating for generators, reinforcement emphasis, unresolved penalties, and local buffs.",
+      "boundary": "Goal-state gating for generators, reserve-wave emphasis, unresolved penalties, and local buffs.",
       "layer": "domain",
       "aliases": ["objective pressure modifier"],
       "status": "accepted",
@@ -192,22 +216,32 @@
     {
       "from": "run-state",
       "type": "visits",
-      "to": "room-template"
+      "to": "encounter-room"
     },
     {
-      "from": "room-template",
-      "type": "instantiates",
-      "to": "stage-runtime-state"
+      "from": "encounter-room",
+      "type": "annotated-by",
+      "to": "encounter-metadata"
     },
     {
-      "from": "room-template",
+      "from": "encounter-room",
+      "type": "uses",
+      "to": "stage-definition"
+    },
+    {
+      "from": "encounter-room",
       "type": "activates",
       "to": "room-activation-profile"
     },
     {
-      "from": "room-template",
+      "from": "encounter-metadata",
       "type": "may-require",
       "to": "capture-objective"
+    },
+    {
+      "from": "stage-definition",
+      "type": "instantiates",
+      "to": "stage-runtime-state"
     },
     {
       "from": "room-activation-profile",

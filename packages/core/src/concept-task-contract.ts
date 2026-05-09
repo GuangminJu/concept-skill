@@ -49,14 +49,19 @@ export const conceptTaskExecutionOutputSchema = {
       type: "array",
       items: {
         type: "object",
-        required: ["name", "kind", "definition", "boundary", "layer", "rationale"],
+        required: ["name", "kind", "definition", "boundary", "layer", "abstraction_level", "rationale"],
         properties: {
           name: { type: "string" },
           kind: { type: "string", enum: ["entity", "value-object", "state", "action", "event", "boundary"] },
           definition: { type: "string" },
           boundary: { type: "string" },
           layer: { type: "string", enum: ["data", "domain", "application", "interface", "cross-cutting"] },
+          abstraction_level: { type: "string", enum: ["foundational", "composite", "specialized"] },
           rationale: { type: "string" },
+          supported_by: {
+            type: "array",
+            items: { type: "string" }
+          },
           conflicts_to_validate: {
             type: "array",
             items: { type: "string" }
@@ -92,10 +97,12 @@ export function buildConceptTaskExecutionPrompt(input: PromptInput): string {
     "Non-negotiable workflow:",
     "1. Identify which existing concepts already own the task's data, lifecycle, serialization, runtime, and interface responsibilities.",
     "2. Reuse registered concepts whenever they already cover the responsibility.",
-    "3. If the task needs a new concept, propose it explicitly with name, kind, definition, boundary, and layer before using it.",
+    "3. If the task needs a new concept, propose it explicitly with name, kind, definition, boundary, layer, and abstraction_level before using it.",
     "4. If two concepts seem to overlap, record the ambiguity as an unresolved conflict instead of blending them together.",
     "5. Keep one concept, one boundary, one owner, one canonical name.",
-    "6. In implementation mode, do not write code that crosses concept boundaries without stating the boundary rule first.",
+    "6. Composite concepts must name the lower-level concepts that support them.",
+    "7. If a concept would only name a concrete gameplay specialization over generic mechanisms, treat that as a concept error instead of registering it.",
+    "8. In implementation mode, do not write code that crosses concept boundaries without stating the boundary rule first.",
     "",
     `Project: ${input.project_id}`,
     `Mode: ${input.mode}`,
