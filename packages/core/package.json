@@ -1,0 +1,19 @@
+{
+  "name": "@concept-mcp/core",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Core concept ontology types, conflict detection, and review contracts.",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit"
+  }
+}

@@ -1,0 +1,210 @@
+{
+  "project_id": "roguegame-integration",
+  "concepts": [
+    {
+      "id": "game-module-boundary",
+      "name": "GameModuleBoundary",
+      "kind": "boundary",
+      "definition": "Entry boundary where RogueGame implements the engine-facing gameplay interface.",
+      "boundary": "Engine-facing module entry, lifecycle callbacks, and runtime ownership handoff.",
+      "layer": "interface",
+      "aliases": ["game module entry"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_game.cpp#IGame"]
+    },
+    {
+      "id": "game-callbacks-boundary",
+      "name": "GameCallbacksBoundary",
+      "kind": "boundary",
+      "definition": "Reverse callback surface used by combat, ai, and effect helpers to notify the coordinator.",
+      "boundary": "Reverse callback surface from combat helpers into coordinator events and feedback requests.",
+      "layer": "interface",
+      "aliases": ["game callbacks"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_callbacks.h#IGameCallbacks"]
+    },
+    {
+      "id": "skill-upgrade-catalog",
+      "name": "SkillUpgradeCatalog",
+      "kind": "boundary",
+      "definition": "Load policy for gameplay upgrade definitions from component JSON or legacy fallback JSON.",
+      "boundary": "Gameplay upgrade catalog loading from component json, legacy json, and builtin fallback.",
+      "layer": "data",
+      "aliases": ["upgrade catalog"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_game.cpp#load_reward_card_catalog_from_components"]
+    },
+    {
+      "id": "ui-screen-copy-catalog",
+      "name": "UIScreenCopyCatalog",
+      "kind": "boundary",
+      "definition": "Manifest-driven UI copy source for titles, prompts, footer strings, and fallback text.",
+      "boundary": "Manifest-driven ui copy source for titles, prompts, footer strings, and fallback text.",
+      "layer": "data",
+      "aliases": ["ui copy catalog"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_game.cpp#load_ui_screen_copy_catalog"]
+    },
+    {
+      "id": "localization-catalog",
+      "name": "LocalizationCatalog",
+      "kind": "boundary",
+      "definition": "Localized string tables consumed through the engine localization service.",
+      "boundary": "Localized string tables with key fallback and template replacement through engine localization.",
+      "layer": "interface",
+      "aliases": ["locale catalog"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_game.cpp#load_localization"]
+    },
+    {
+      "id": "game-settings-document",
+      "name": "GameSettingsDocument",
+      "kind": "value-object",
+      "definition": "Saved config document for fps display and performance recording preferences.",
+      "boundary": "Saved config for fps display, auto perf recording, and config file persistence.",
+      "layer": "data",
+      "aliases": ["settings json"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_game.cpp#load_settings"]
+    },
+    {
+      "id": "asset-path-strategy",
+      "name": "AssetPathStrategy",
+      "kind": "boundary",
+      "definition": "Resolution rule that prefers packaged assets and falls back to development asset paths.",
+      "boundary": "Packaged-versus-dev content path selection for shared binaries and assets.",
+      "layer": "cross-cutting",
+      "aliases": ["asset fallback strategy"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_constants.h#packaged_or_dev_asset"]
+    },
+    {
+      "id": "navigation-adapter",
+      "name": "NavigationAdapter",
+      "kind": "boundary",
+      "definition": "Game wrapper around engine crowd navigation and gameplay telemetry collection.",
+      "boundary": "Wrapper around engine crowd navigation, path stats, and enemy steering requests.",
+      "layer": "application",
+      "aliases": ["rogue navigation wrapper"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_navigation.h#GameplayNavStats"]
+    },
+    {
+      "id": "audio-request-queue",
+      "name": "AudioRequestQueue",
+      "kind": "boundary",
+      "definition": "Coordinator-owned queue of sound requests handed to the engine audio layer.",
+      "boundary": "Coordinator-owned sound request queue for hit, reward, and ui playback intents.",
+      "layer": "application",
+      "aliases": ["game audio queue"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_game.cpp#GameAudioRequest"]
+    },
+    {
+      "id": "performance-record",
+      "name": "PerformanceRecord",
+      "kind": "value-object",
+      "definition": "Debug capture stream for frame metrics exported to JSON and CSV.",
+      "boundary": "Debug frame metrics export to json and csv under saved diagnostics folders.",
+      "layer": "cross-cutting",
+      "aliases": ["perf capture"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_game.cpp#write_perf_recording"]
+    },
+    {
+      "id": "spawn-zone-activation",
+      "name": "SpawnZoneActivation",
+      "kind": "boundary",
+      "definition": "Coordinator-side operation that turns encounter-zone tags and generator tags on or off for the active room.",
+      "boundary": "Coordinator operation that turns zone tags and generator tags on or off for the active room.",
+      "layer": "application",
+      "aliases": ["zone activation"],
+      "status": "accepted",
+      "source_refs": ["design://roguegame/spawn-design/spawn-zone-activation"]
+    },
+    {
+      "id": "spawn-payload-adapter",
+      "name": "SpawnPayloadAdapter",
+      "kind": "boundary",
+      "definition": "Game-side adapter that resolves generic payload entries into enemies, interactables, or scripted runtime actors.",
+      "boundary": "Resolver layer that materializes generic entries as enemy actors, interactables, or scripted entities.",
+      "layer": "application",
+      "aliases": ["payload adapter"],
+      "status": "accepted",
+      "source_refs": ["design://roguegame/spawn-design/spawn-payload-adapter"]
+    },
+    {
+      "id": "spawn-telemetry",
+      "name": "SpawnTelemetry",
+      "kind": "value-object",
+      "definition": "Balancing record of source usage, composition mix, denied requests, and pressure outcomes during a stage.",
+      "boundary": "Balancing record of generator usage, composition mix, pressure peaks, and denied requests.",
+      "layer": "cross-cutting",
+      "aliases": ["spawn metrics"],
+      "status": "accepted",
+      "source_refs": ["design://roguegame/spawn-design/spawn-telemetry"]
+    }
+  ],
+  "relations": [
+    {
+      "from": "game-module-boundary",
+      "type": "receives",
+      "to": "game-settings-document"
+    },
+    {
+      "from": "game-module-boundary",
+      "type": "loads",
+      "to": "skill-upgrade-catalog"
+    },
+    {
+      "from": "game-module-boundary",
+      "type": "loads",
+      "to": "ui-screen-copy-catalog"
+    },
+    {
+      "from": "game-module-boundary",
+      "type": "uses",
+      "to": "asset-path-strategy"
+    },
+    {
+      "from": "game-module-boundary",
+      "type": "delegates",
+      "to": "game-callbacks-boundary"
+    },
+    {
+      "from": "game-module-boundary",
+      "type": "delegates",
+      "to": "spawn-zone-activation"
+    },
+    {
+      "from": "game-module-boundary",
+      "type": "delegates",
+      "to": "spawn-payload-adapter"
+    },
+    {
+      "from": "game-module-boundary",
+      "type": "feeds",
+      "to": "audio-request-queue"
+    },
+    {
+      "from": "ui-screen-copy-catalog",
+      "type": "depends-on",
+      "to": "localization-catalog"
+    },
+    {
+      "from": "navigation-adapter",
+      "type": "reports",
+      "to": "performance-record"
+    },
+    {
+      "from": "spawn-zone-activation",
+      "type": "records",
+      "to": "spawn-telemetry"
+    },
+    {
+      "from": "spawn-telemetry",
+      "type": "feeds",
+      "to": "performance-record"
+    }
+  ]
+}

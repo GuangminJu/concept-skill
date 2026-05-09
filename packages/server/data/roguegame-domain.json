@@ -1,0 +1,273 @@
+{
+  "project_id": "roguegame-domain",
+  "concepts": [
+    {
+      "id": "run-state",
+      "name": "Run",
+      "kind": "state",
+      "definition": "Single playthrough lifecycle covering setup, progression, rewards, and failure.",
+      "boundary": "Session-wide progression, salvage economy, milestone tracking, and restart ownership.",
+      "layer": "domain",
+      "aliases": ["game run"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_game.cpp#reset_run_state"]
+    },
+    {
+      "id": "game-phase",
+      "name": "GamePhase",
+      "kind": "state",
+      "definition": "Coordinator phase machine that gates player control, hit stop, rewards, and game over flow.",
+      "boundary": "Coordinator phase gates, modal transitions, pause windows, and input routing.",
+      "layer": "application",
+      "aliases": ["phase state"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_game.cpp#GamePhase"]
+    },
+    {
+      "id": "room-template",
+      "name": "RoomTemplate",
+      "kind": "entity",
+      "definition": "Authored encounter recipe containing danger tier, objective type, spawn composition, and score target.",
+      "boundary": "Encounter recipe with threat tier, objective mode, spawn table, and score threshold.",
+      "layer": "domain",
+      "aliases": ["encounter template"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_game.cpp#room_templates"]
+    },
+    {
+      "id": "stage-runtime-state",
+      "name": "StageRuntimeState",
+      "kind": "state",
+      "definition": "Live room metrics tracked while a template is being played.",
+      "boundary": "Live room metrics: elapsed clock, score tally, clear rank, and completion marks.",
+      "layer": "application",
+      "aliases": ["stage state"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_game.cpp#StageRuntimeState"]
+    },
+    {
+      "id": "capture-objective",
+      "name": "CaptureObjective",
+      "kind": "entity",
+      "definition": "Territory-control objective with progress accumulation and success or failure resolution.",
+      "boundary": "Territory progress, resolution flags, control zone thresholds, and capture completion.",
+      "layer": "domain",
+      "aliases": ["capture mode"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_game.cpp#capture_progress_"]
+    },
+    {
+      "id": "player-run-state",
+      "name": "PlayerRunState",
+      "kind": "state",
+      "definition": "Run-persistent player progression values that outlive a single room.",
+      "boundary": "Persistent run bonuses, xp totals, salvage currency, and unlocked reward ranks.",
+      "layer": "domain",
+      "aliases": ["run progression"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_game.cpp#player_xp_"]
+    },
+    {
+      "id": "player-actor",
+      "name": "PlayerActor",
+      "kind": "entity",
+      "definition": "Controllable combatant represented by an ECS entity plus player-specific combat fields.",
+      "boundary": "Controllable fighter entity, locomotion stats, current hp, melee timings, and combo inputs.",
+      "layer": "application",
+      "aliases": ["player combat actor"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_components.h#PlayerComponent"]
+    },
+    {
+      "id": "enemy-actor",
+      "name": "EnemyActor",
+      "kind": "entity",
+      "definition": "Hostile pooled combatant with kind-specific behavior, timers, and attack tuning.",
+      "boundary": "Pooled hostile entity, ai timers, kind-specific attacks, and defeat reward hooks.",
+      "layer": "application",
+      "aliases": ["enemy combat actor"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_components.h#EnemyComponent"]
+    },
+    {
+      "id": "projectile-actor",
+      "name": "Projectile",
+      "kind": "entity",
+      "definition": "Transient combat carrier for enemy arrows and player homing shots.",
+      "boundary": "Transient damage carrier with velocity, lifetime, target selection, and pierce behavior.",
+      "layer": "application",
+      "aliases": ["combat projectile"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_components.h#ProjectileComponent"]
+    },
+    {
+      "id": "skill-family",
+      "name": "SkillFamily",
+      "kind": "entity",
+      "definition": "Named ability lineage used by RogueGame for nova, homing, orbitals, and global upgrades.",
+      "boundary": "Named ability lineage for nova, homing, orbitals, and global upgrade branches.",
+      "layer": "domain",
+      "aliases": ["ability family"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_game.cpp#SkillFamily"]
+    },
+    {
+      "id": "reward-card-spec",
+      "name": "RewardCardSpec",
+      "kind": "value-object",
+      "definition": "Offer definition for a rankable upgrade card shown in shops and level-up choices.",
+      "boundary": "Offer definition with rarity, rank cap, display copy, xp value, and shop cost.",
+      "layer": "data",
+      "aliases": ["upgrade card spec"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_game.cpp#RewardCardSpec"]
+    },
+    {
+      "id": "shop-state",
+      "name": "ShopState",
+      "kind": "state",
+      "definition": "Current upgrade-offer market state for a run, including rerolls and locked offers.",
+      "boundary": "Reroll economy, lock slot, offered cards, purchase readiness, and continue gating.",
+      "layer": "application",
+      "aliases": ["upgrade shop state"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_game.cpp#shop_reroll_cost"]
+    },
+    {
+      "id": "game-hud-state",
+      "name": "GameHudState",
+      "kind": "state",
+      "definition": "Presentation model projected every frame for vitals, skills, stage status, and modal panels.",
+      "boundary": "Per-frame presentation model for vitals, skill icons, stage status, and modal panels.",
+      "layer": "interface",
+      "aliases": ["hud model"],
+      "status": "accepted",
+      "source_refs": ["source://game/src/rogue_game.cpp#build_hud_state"]
+    },
+    {
+      "id": "room-activation-profile",
+      "name": "RoomActivationProfile",
+      "kind": "value-object",
+      "definition": "Selection rules mapping a room template to encounter-zone tags and enabled generator tags inside the world.",
+      "boundary": "Selection rules for encounter zone tags, enabled generators, excluded tags, and startup activations.",
+      "layer": "domain",
+      "aliases": ["activation profile"],
+      "status": "accepted",
+      "source_refs": ["design://roguegame/spawn-design/room-activation-profile"]
+    },
+    {
+      "id": "stage-pressure-modifier",
+      "name": "StagePressureModifier",
+      "kind": "value-object",
+      "definition": "Game-specific pressure policy that biases the generic spawn director during a stage.",
+      "boundary": "Director bias over credit gain, alive-cap pressure, beat emphasis, and escalation tempo.",
+      "layer": "domain",
+      "aliases": ["pressure modifier"],
+      "status": "accepted",
+      "source_refs": ["design://roguegame/spawn-design/stage-pressure-modifier"]
+    },
+    {
+      "id": "objective-spawn-modifier",
+      "name": "ObjectiveSpawnModifier",
+      "kind": "value-object",
+      "definition": "Objective-state rule set that changes source eligibility, reinforcement emphasis, and unresolved penalties.",
+      "boundary": "Objective-state gating for generators, reinforcement emphasis, unresolved penalties, and local buffs.",
+      "layer": "domain",
+      "aliases": ["objective pressure modifier"],
+      "status": "accepted",
+      "source_refs": ["design://roguegame/spawn-design/objective-spawn-modifier"]
+    }
+  ],
+  "relations": [
+    {
+      "from": "run-state",
+      "type": "gates",
+      "to": "game-phase"
+    },
+    {
+      "from": "run-state",
+      "type": "owns",
+      "to": "player-run-state"
+    },
+    {
+      "from": "run-state",
+      "type": "visits",
+      "to": "room-template"
+    },
+    {
+      "from": "room-template",
+      "type": "instantiates",
+      "to": "stage-runtime-state"
+    },
+    {
+      "from": "room-template",
+      "type": "activates",
+      "to": "room-activation-profile"
+    },
+    {
+      "from": "room-template",
+      "type": "may-require",
+      "to": "capture-objective"
+    },
+    {
+      "from": "room-activation-profile",
+      "type": "biases",
+      "to": "stage-pressure-modifier"
+    },
+    {
+      "from": "stage-runtime-state",
+      "type": "contains",
+      "to": "enemy-actor"
+    },
+    {
+      "from": "stage-runtime-state",
+      "type": "tracks",
+      "to": "player-actor"
+    },
+    {
+      "from": "stage-runtime-state",
+      "type": "applies",
+      "to": "stage-pressure-modifier"
+    },
+    {
+      "from": "capture-objective",
+      "type": "applies",
+      "to": "objective-spawn-modifier"
+    },
+    {
+      "from": "objective-spawn-modifier",
+      "type": "adjusts",
+      "to": "stage-pressure-modifier"
+    },
+    {
+      "from": "player-actor",
+      "type": "fires",
+      "to": "projectile-actor"
+    },
+    {
+      "from": "player-run-state",
+      "type": "unlocks",
+      "to": "skill-family"
+    },
+    {
+      "from": "reward-card-spec",
+      "type": "upgrades",
+      "to": "skill-family"
+    },
+    {
+      "from": "shop-state",
+      "type": "offers",
+      "to": "reward-card-spec"
+    },
+    {
+      "from": "game-hud-state",
+      "type": "presents",
+      "to": "shop-state"
+    },
+    {
+      "from": "game-hud-state",
+      "type": "presents",
+      "to": "stage-runtime-state"
+    }
+  ]
+}

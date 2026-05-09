@@ -1,0 +1,34 @@
+{
+  "name": "@concept-mcp/server",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "MCP stdio server for concept conflict validation.",
+  "files": [
+    "dist",
+    "data"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "concept-mcp-server": "./dist/index.js"
+  },
+  "scripts": {
+    "prebuild": "npm --workspace @concept-mcp/core run build && npm --workspace @concept-mcp/storage-file run build && npm --workspace @concept-mcp/storage-sqlite run build",
+    "precheck": "npm --workspace @concept-mcp/core run build && npm --workspace @concept-mcp/storage-file run build && npm --workspace @concept-mcp/storage-sqlite run build",
+    "predev": "npm --workspace @concept-mcp/core run build && npm --workspace @concept-mcp/storage-file run build && npm --workspace @concept-mcp/storage-sqlite run build",
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@concept-mcp/core": "0.1.0",
+    "@concept-mcp/storage-file": "0.1.0",
+    "@concept-mcp/storage-sqlite": "0.1.0",
+    "@modelcontextprotocol/sdk": "^1.12.0"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "@concept-mcp/storage-sqlite",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "SQLite-backed repository adapter for concept MCP ontology data.",
+  "files": [
+    "dist",
+    "schema.sql"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "prebuild": "npm --workspace @concept-mcp/core run build",
+    "precheck": "npm --workspace @concept-mcp/core run build",
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@concept-mcp/core": "0.1.0",
+    "better-sqlite3": "^11.8.1"
+  }
+}

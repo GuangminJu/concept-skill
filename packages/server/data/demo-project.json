@@ -1,0 +1,53 @@
+{
+  "project_id": "demo-project",
+  "concepts": [
+    {
+      "id": "player-state",
+      "name": "PlayerState",
+      "kind": "state",
+      "definition": "Serializable player progression state.",
+      "boundary": "Persistent player progression, meta state, and durable stats.",
+      "layer": "domain",
+      "aliases": ["player state", "persistent player state"]
+    },
+    {
+      "id": "player-runtime-state",
+      "name": "PlayerState",
+      "kind": "state",
+      "definition": "Volatile in-session player simulation state.",
+      "boundary": "Runtime movement, combat, animation, and immediate session values.",
+      "layer": "application",
+      "aliases": ["runtime player state", "player state"]
+    },
+    {
+      "id": "inventory",
+      "name": "Inventory",
+      "kind": "entity",
+      "definition": "Owned item container.",
+      "boundary": "Item ownership, storage capacity, and stack accounting.",
+      "layer": "domain",
+      "aliases": ["bag"]
+    },
+    {
+      "id": "equipment",
+      "name": "Equipment",
+      "kind": "entity",
+      "definition": "Equipped item set.",
+      "boundary": "Equip slots, active gear, and item ownership during equip transitions.",
+      "layer": "domain",
+      "aliases": ["gear"]
+    }
+  ],
+  "relations": [
+    {
+      "from": "inventory",
+      "type": "depends-on",
+      "to": "equipment"
+    },
+    {
+      "from": "equipment",
+      "type": "depends-on",
+      "to": "inventory"
+    }
+  ]
+}

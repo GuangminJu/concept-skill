@@ -1,0 +1,561 @@
+{
+  "project_id": "ohmyengine-engine",
+  "concepts": [
+    {
+      "id": "core-object",
+      "name": "Object",
+      "kind": "entity",
+      "definition": "Reflective base instance that exposes named property access and optional asset identity.",
+      "boundary": "Reflective base instance, named property mutation, and optional asset identity.",
+      "layer": "cross-cutting",
+      "aliases": ["core object", "reflective object"],
+      "status": "accepted",
+      "source_refs": ["source://engine/core/include/ome/core/object.h#Object"]
+    },
+    {
+      "id": "reflection-type-info",
+      "name": "TypeInfo",
+      "kind": "value-object",
+      "definition": "Static reflection metadata describing a class, its parent, declared properties, and factory.",
+      "boundary": "Static class metadata, parent lineage, property descriptors, and factory pointer.",
+      "layer": "cross-cutting",
+      "aliases": ["reflection type info"],
+      "status": "accepted",
+      "source_refs": ["source://engine/core/include/ome/core/reflect.h#TypeInfo"]
+    },
+    {
+      "id": "reflection-type-registry",
+      "name": "TypeRegistry",
+      "kind": "boundary",
+      "definition": "Global registry that stores reflected classes and creates objects by type name.",
+      "boundary": "Global registry for reflected classes, constructor lookup, and type enumeration.",
+      "layer": "cross-cutting",
+      "aliases": ["reflection registry"],
+      "status": "accepted",
+      "source_refs": ["source://engine/core/include/ome/core/reflect.h#TypeRegistry"]
+    },
+    {
+      "id": "asset-uid",
+      "name": "AssetUID",
+      "kind": "value-object",
+      "definition": "Stable numeric identifier for an asset across persistence and lookup flows.",
+      "boundary": "Stable 64-bit identifier for persisted asset references.",
+      "layer": "data",
+      "aliases": ["asset uid", "asset id"],
+      "status": "accepted",
+      "source_refs": ["source://engine/core/include/ome/core/asset.h#AssetUID"]
+    },
+    {
+      "id": "asset-header",
+      "name": "AssetHeader",
+      "kind": "value-object",
+      "definition": "Fixed metadata header stored ahead of an .ome asset body.",
+      "boundary": "Fixed ome header with asset kind, uid, dependency list, and blueprint type tag.",
+      "layer": "data",
+      "aliases": ["ome asset header"],
+      "status": "accepted",
+      "source_refs": ["source://engine/core/include/ome/core/asset.h#AssetHeader"]
+    },
+    {
+      "id": "asset-write-transaction",
+      "name": "AssetWriteTransaction",
+      "kind": "boundary",
+      "definition": "Transactional file writer that stages a new asset body before commit or rollback.",
+      "boundary": "Staged file writer using temp paths, backups, and atomic commit rollback.",
+      "layer": "data",
+      "aliases": ["asset file transaction"],
+      "status": "accepted",
+      "source_refs": ["source://engine/core/include/ome/core/asset_file.h#AssetWriteTransaction"]
+    },
+    {
+      "id": "core-serializer",
+      "name": "Serializer",
+      "kind": "boundary",
+      "definition": "Binary persistence service for reflected objects and asset-linked references.",
+      "boundary": "Binary persistence for payload values, schema tags, and uid-backed links.",
+      "layer": "cross-cutting",
+      "aliases": ["binary serializer"],
+      "status": "accepted",
+      "source_refs": ["source://engine/core/include/ome/core/serializer.h#Serializer"]
+    },
+    {
+      "id": "ecs-component",
+      "name": "Component",
+      "kind": "entity",
+      "definition": "Entity-attached reflective unit that can be toggled on or off.",
+      "boundary": "Entity-attached unit with enabled gate for ecs composition.",
+      "layer": "application",
+      "aliases": ["ecs component"],
+      "status": "accepted",
+      "source_refs": ["source://engine/ecs/include/ome/ecs/component.h#Component"]
+    },
+    {
+      "id": "ecs-transform",
+      "name": "Transform",
+      "kind": "entity",
+      "definition": "Spatial component carrying position, rotation, and scale values.",
+      "boundary": "Spatial coordinates, rotation, and scale payload for entities.",
+      "layer": "application",
+      "aliases": ["transform component"],
+      "status": "accepted",
+      "source_refs": ["source://engine/ecs/include/ome/ecs/component.h#Transform"]
+    },
+    {
+      "id": "runtime-engine-context",
+      "name": "EngineContext",
+      "kind": "entity",
+      "definition": "Runtime composition root that exposes the active engine services and extensions.",
+      "boundary": "Startup-owned service hub exposing window, input, renderer, viewport, world, and localization handles.",
+      "layer": "application",
+      "aliases": ["engine context"],
+      "status": "accepted",
+      "source_refs": ["source://engine/core/include/ome/core/engine_context.h#EngineContext"]
+    },
+    {
+      "id": "runtime-frame-loop",
+      "name": "FrameLoop",
+      "kind": "boundary",
+      "definition": "Main runtime loop that sequences tick phases for windowed or headless execution.",
+      "boundary": "Window and headless tick orchestration, callback phases, and delta-step sequencing.",
+      "layer": "application",
+      "aliases": ["engine frame loop"],
+      "status": "accepted",
+      "source_refs": ["source://engine/runtime/include/ome/runtime/frame_loop.h#FrameLoopCallbacks"]
+    },
+    {
+      "id": "renderer-interface",
+      "name": "IRenderer",
+      "kind": "boundary",
+      "definition": "Abstract rendering contract for initialization, frame lifecycle, scene submission, and export.",
+      "boundary": "Abstract rendering contract covering frame lifecycle and scene submission.",
+      "layer": "interface",
+      "aliases": ["renderer interface"],
+      "status": "accepted",
+      "source_refs": ["source://engine/render/include/ome/render/renderer.h#IRenderer"]
+    },
+    {
+      "id": "scene-render-hook",
+      "name": "SceneRenderHook",
+      "kind": "boundary",
+      "definition": "Callback extension point invoked during scene rendering with raw GPU context.",
+      "boundary": "Callback injection point with raw gpu context during scene draws.",
+      "layer": "interface",
+      "aliases": ["scene hook"],
+      "status": "accepted",
+      "source_refs": ["source://engine/render/include/ome/render/scene_render_hook.h#SceneRenderHookFunc"]
+    },
+    {
+      "id": "animation-graph",
+      "name": "AnimationGraph",
+      "kind": "entity",
+      "definition": "Authored animation state graph describing clip transitions, parameters, and events.",
+      "boundary": "Animation state machine topology, transition rules, clip wiring, and event markers.",
+      "layer": "data",
+      "aliases": ["anim graph"],
+      "status": "accepted",
+      "source_refs": ["source://engine/animation/include/ome/animation/animation_graph.h#AnimationGraph"]
+    },
+    {
+      "id": "effects-system",
+      "name": "EffectSystem",
+      "kind": "boundary",
+      "definition": "Runtime service that routes entity-authored and explicit effect playback through a backend.",
+      "boundary": "Effect playback routing, backend dispatch, authored effect components, and lifetime updates.",
+      "layer": "application",
+      "aliases": ["fx system"],
+      "status": "accepted",
+      "source_refs": ["source://engine/effects/include/ome/effects/effect_system.h#EffectSystem"]
+    },
+    {
+      "id": "core-ref",
+      "name": "Ref",
+      "kind": "value-object",
+      "definition": "Non-owning object or asset reference wrapper that can carry an AssetUID.",
+      "boundary": "Stored wrapper for object fields, serialized pointers, and deferred uid linkage.",
+      "layer": "cross-cutting",
+      "aliases": ["object ref", "serialized ref"],
+      "status": "accepted",
+      "source_refs": ["source://engine/core/include/ome/core/ref.h#Ref"]
+    },
+    {
+      "id": "asset-handle",
+      "name": "AssetHandle",
+      "kind": "value-object",
+      "definition": "Runtime handle that resolves an asset identity through registry-managed lookup.",
+      "boundary": "Runtime resolution handle for path lookup, cache access, and deferred materialization.",
+      "layer": "application",
+      "aliases": ["runtime handle", "asset handle"],
+      "status": "accepted",
+      "source_refs": ["source://engine/core/include/ome/core/asset_handle.h#AssetHandle"]
+    },
+    {
+      "id": "ecs-world",
+      "name": "World",
+      "kind": "entity",
+      "definition": "Runtime ECS container managing entities, component storage, and world transactions.",
+      "boundary": "Runtime world containing entities, components, and mutation transactions.",
+      "layer": "application",
+      "aliases": ["world", "runtime world"],
+      "status": "accepted",
+      "source_refs": ["source://engine/ecs/include/ome/ecs/world.h#World"]
+    },
+    {
+      "id": "gameplay-world-resource",
+      "name": "WorldResource",
+      "kind": "entity",
+      "definition": "Serialized asset object that identifies the level input used to build a world instance.",
+      "boundary": "Serialized resource that names the target level asset for world loading.",
+      "layer": "data",
+      "aliases": ["world asset"],
+      "status": "accepted",
+      "source_refs": ["source://engine/gameplay/include/ome/gameplay/world_resource.h#WorldResource"]
+    },
+    {
+      "id": "gameplay-level",
+      "name": "Level",
+      "kind": "entity",
+      "definition": "Serialized gameplay template carrying gravity and entity budget defaults.",
+      "boundary": "Gameplay template storing gravity, entity budget, and initialization defaults.",
+      "layer": "data",
+      "aliases": ["world template", "level data"],
+      "status": "accepted",
+      "source_refs": ["source://engine/gameplay/include/ome/gameplay/level.h#Level"]
+    },
+    {
+      "id": "module-loaded-module",
+      "name": "LoadedModule",
+      "kind": "boundary",
+      "definition": "Native module lifetime wrapper that owns a loaded binary handle and exported factories.",
+      "boundary": "Native module lifetime, binary library ownership, exported factory discovery, and unload safety.",
+      "layer": "interface",
+      "aliases": ["module handle"],
+      "status": "accepted",
+      "source_refs": ["source://engine/core/include/ome/core/module_loader.h#LoadedModule"]
+    },
+    {
+      "id": "game-interface",
+      "name": "IGame",
+      "kind": "boundary",
+      "definition": "Versioned gameplay interface implemented by a game module and driven by the engine.",
+      "boundary": "Versioned gameplay entry callbacks for start, tick, destroy, and debug-ui negotiation.",
+      "layer": "interface",
+      "aliases": ["game module interface"],
+      "status": "accepted",
+      "source_refs": ["source://engine/core/include/ome/core/game_interface.h#IGame"]
+    },
+    {
+      "id": "engine-extension-slot",
+      "name": "EngineExtensionSlot",
+      "kind": "boundary",
+      "definition": "Per-engine attachment slot that lets external modules hang opaque state off EngineContext.",
+      "boundary": "Type-keyed or named attachment slots for module-owned state and custom deleters.",
+      "layer": "cross-cutting",
+      "aliases": ["extension slot"],
+      "status": "accepted",
+      "source_refs": ["source://engine/core/include/ome/core/engine_context.h#set_extension"]
+    },
+    {
+      "id": "encounter-zone",
+      "name": "EncounterZone",
+      "kind": "entity",
+      "definition": "World-authored grouping that scopes encounter generators, anchors, objectives, and activation tags.",
+      "boundary": "Encounter-scoped cluster of lanes, origins, objectives, and zone labels for authored spaces.",
+      "layer": "data",
+      "aliases": ["encounter zone"],
+      "status": "accepted",
+      "source_refs": ["design://generic-spawn-system/encounter-zone"]
+    },
+    {
+      "id": "spawn-source",
+      "name": "SpawnSource",
+      "kind": "entity",
+      "definition": "Placed world entity that describes a reusable generation source for any runtime payload.",
+      "boundary": "Placed emission descriptor: tag bindings, catalog linkage, trigger ownership, and emit lanes.",
+      "layer": "data",
+      "aliases": ["generator source"],
+      "status": "accepted",
+      "source_refs": ["design://generic-spawn-system/spawn-source"]
+    },
+    {
+      "id": "spawn-anchor",
+      "name": "SpawnAnchor",
+      "kind": "entity",
+      "definition": "Semantic origin marker used by a generation source to place results in meaningful space.",
+      "boundary": "Semantic origin marker such as front flank rear objective or reinforcement lane.",
+      "layer": "data",
+      "aliases": ["generator anchor"],
+      "status": "accepted",
+      "source_refs": ["design://generic-spawn-system/spawn-anchor"]
+    },
+    {
+      "id": "spawn-volume",
+      "name": "SpawnVolume",
+      "kind": "boundary",
+      "definition": "Authored area sampler that yields valid placement positions for a generation source.",
+      "boundary": "Area sampler: shape rules, distribution map, exclusion padding, and occupancy tests.",
+      "layer": "data",
+      "aliases": ["generator volume"],
+      "status": "accepted",
+      "source_refs": ["design://generic-spawn-system/spawn-volume"]
+    },
+    {
+      "id": "spawn-payload-set",
+      "name": "SpawnPayloadSet",
+      "kind": "entity",
+      "definition": "Reusable catalog of spawnable payload entries, weights, costs, and role tags.",
+      "boundary": "Entry table of weighted prefabs, costs, quotas, and role labels.",
+      "layer": "data",
+      "aliases": ["payload catalog"],
+      "status": "accepted",
+      "source_refs": ["design://generic-spawn-system/spawn-payload-set"]
+    },
+    {
+      "id": "spawn-condition",
+      "name": "SpawnCondition",
+      "kind": "value-object",
+      "definition": "Declarative trigger rule describing when a generation source may emit outputs.",
+      "boundary": "Declarative trigger predicates based on stage state, objective state, time windows, and tag gates.",
+      "layer": "data",
+      "aliases": ["generator condition"],
+      "status": "accepted",
+      "source_refs": ["design://generic-spawn-system/spawn-condition"]
+    },
+    {
+      "id": "spawn-limit",
+      "name": "SpawnLimit",
+      "kind": "value-object",
+      "definition": "Authored limit policy constraining cooldown, concurrency, count, and budget of a generation source.",
+      "boundary": "Quota policy: recharge gate, concurrency ceiling, lifetime allotment, and budget ceiling.",
+      "layer": "data",
+      "aliases": ["generator limit"],
+      "status": "accepted",
+      "source_refs": ["design://generic-spawn-system/spawn-limit"]
+    },
+    {
+      "id": "spawn-director",
+      "name": "SpawnDirector",
+      "kind": "boundary",
+      "definition": "Runtime policy that evaluates pacing and requests eligible world-authored generation sources.",
+      "boundary": "Pacing policy that ranks eligible emitters from danger, tempo, and objective pressure.",
+      "layer": "application",
+      "aliases": ["generation director"],
+      "status": "accepted",
+      "source_refs": ["design://generic-spawn-system/spawn-director"]
+    },
+    {
+      "id": "spawn-request",
+      "name": "SpawnRequest",
+      "kind": "action",
+      "definition": "Single runtime request instructing the spawn framework to activate a source with specific intent.",
+      "boundary": "Single dispatch order naming a source, desired count, and placement pattern.",
+      "layer": "application",
+      "aliases": ["generation request"],
+      "status": "accepted",
+      "source_refs": ["design://generic-spawn-system/spawn-request"]
+    },
+    {
+      "id": "spawn-runtime-state",
+      "name": "SpawnRuntimeState",
+      "kind": "state",
+      "definition": "Per-source runtime state tracking cooldowns, remaining charges, active outputs, and activation flags.",
+      "boundary": "Live emission ledger: recharge clock, remaining charges, live occupancy, and enable flags.",
+      "layer": "application",
+      "aliases": ["generator runtime state"],
+      "status": "accepted",
+      "source_refs": ["design://generic-spawn-system/spawn-runtime-state"]
+    },
+    {
+      "id": "spawned-actor-link",
+      "name": "SpawnedActorLink",
+      "kind": "value-object",
+      "definition": "Runtime association from a spawned actor back to the source instance that emitted it.",
+      "boundary": "Association from a live actor back to its emitter lineage token.",
+      "layer": "application",
+      "aliases": ["spawn link"],
+      "status": "accepted",
+      "source_refs": ["design://generic-spawn-system/spawned-actor-link"]
+    }
+  ],
+  "relations": [
+    {
+      "from": "core-object",
+      "type": "described-by",
+      "to": "reflection-type-info"
+    },
+    {
+      "from": "reflection-type-registry",
+      "type": "indexes",
+      "to": "reflection-type-info"
+    },
+    {
+      "from": "core-object",
+      "type": "carries-identity",
+      "to": "asset-uid"
+    },
+    {
+      "from": "asset-header",
+      "type": "embeds",
+      "to": "asset-uid"
+    },
+    {
+      "from": "asset-write-transaction",
+      "type": "persists",
+      "to": "asset-header"
+    },
+    {
+      "from": "core-serializer",
+      "type": "serializes",
+      "to": "core-object"
+    },
+    {
+      "from": "core-serializer",
+      "type": "writes-refs-with",
+      "to": "asset-uid"
+    },
+    {
+      "from": "ecs-component",
+      "type": "specializes",
+      "to": "core-object"
+    },
+    {
+      "from": "ecs-transform",
+      "type": "specializes",
+      "to": "ecs-component"
+    },
+    {
+      "from": "runtime-frame-loop",
+      "type": "drives",
+      "to": "runtime-engine-context"
+    },
+    {
+      "from": "runtime-engine-context",
+      "type": "exposes",
+      "to": "renderer-interface"
+    },
+    {
+      "from": "runtime-engine-context",
+      "type": "hosts",
+      "to": "engine-extension-slot"
+    },
+    {
+      "from": "renderer-interface",
+      "type": "supports-hook",
+      "to": "scene-render-hook"
+    },
+    {
+      "from": "effects-system",
+      "type": "runs-inside",
+      "to": "ecs-world"
+    },
+    {
+      "from": "animation-graph",
+      "type": "drives",
+      "to": "ecs-component"
+    },
+    {
+      "from": "core-ref",
+      "type": "references",
+      "to": "asset-uid"
+    },
+    {
+      "from": "asset-handle",
+      "type": "references",
+      "to": "asset-uid"
+    },
+    {
+      "from": "gameplay-world-resource",
+      "type": "depends-on",
+      "to": "gameplay-level"
+    },
+    {
+      "from": "gameplay-level",
+      "type": "contains",
+      "to": "encounter-zone"
+    },
+    {
+      "from": "encounter-zone",
+      "type": "contains",
+      "to": "spawn-source"
+    },
+    {
+      "from": "encounter-zone",
+      "type": "provides",
+      "to": "spawn-anchor"
+    },
+    {
+      "from": "encounter-zone",
+      "type": "scopes",
+      "to": "spawn-volume"
+    },
+    {
+      "from": "spawn-source",
+      "type": "uses",
+      "to": "spawn-payload-set"
+    },
+    {
+      "from": "spawn-source",
+      "type": "obeys",
+      "to": "spawn-condition"
+    },
+    {
+      "from": "spawn-source",
+      "type": "obeys",
+      "to": "spawn-limit"
+    },
+    {
+      "from": "spawn-source",
+      "type": "targets",
+      "to": "spawn-anchor"
+    },
+    {
+      "from": "spawn-source",
+      "type": "samples",
+      "to": "spawn-volume"
+    },
+    {
+      "from": "spawn-director",
+      "type": "issues",
+      "to": "spawn-request"
+    },
+    {
+      "from": "spawn-request",
+      "type": "activates",
+      "to": "spawn-source"
+    },
+    {
+      "from": "spawn-director",
+      "type": "tracks",
+      "to": "spawn-runtime-state"
+    },
+    {
+      "from": "spawn-runtime-state",
+      "type": "tracks",
+      "to": "spawn-source"
+    },
+    {
+      "from": "spawned-actor-link",
+      "type": "originates-from",
+      "to": "spawn-source"
+    },
+    {
+      "from": "spawned-actor-link",
+      "type": "lives-in",
+      "to": "ecs-world"
+    },
+    {
+      "from": "ecs-world",
+      "type": "materializes-from",
+      "to": "gameplay-world-resource"
+    },
+    {
+      "from": "module-loaded-module",
+      "type": "creates",
+      "to": "game-interface"
+    },
+    {
+      "from": "game-interface",
+      "type": "runs-with",
+      "to": "runtime-engine-context"
+    }
+  ]
+}

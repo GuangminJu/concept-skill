@@ -1,0 +1,24 @@
+{
+  "name": "@concept-mcp/host-adapters",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Host-side launch request builders for Claude, Codex, and Copilot.",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "prebuild": "npm --workspace @concept-mcp/core run build",
+    "precheck": "npm --workspace @concept-mcp/core run build",
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@concept-mcp/core": "0.1.0"
+  }
+}
