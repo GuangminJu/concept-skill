@@ -1,5 +1,5 @@
 ---
-name: concept-mcp
+name: concept-skill
 description: Use a local Concept MCP server to align AI design and implementation work with a project's registered concepts, boundaries, and conflict-review workflow.
 ---
 
