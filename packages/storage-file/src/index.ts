@@ -1,19 +1,26 @@
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import type { ConceptRecord, ConceptRepository, RelationRecord } from "@concept-mcp/core";
+import type {
+  ConceptProposalRecord,
+  ConceptRecord,
+  ConceptValidationDecisionRecord,
+  MutableConceptRepository,
+  RelationRecord
+} from "@concept-mcp/core";
 
 interface FileProjectDocument {
   project_id: string;
   concepts: ConceptRecord[];
   relations: RelationRecord[];
+  validation_decisions?: ConceptValidationDecisionRecord[];
 }
 
 export interface FileRepositoryOptions {
   rootDir: string;
 }
 
-export class FileConceptRepository implements ConceptRepository {
+export class FileConceptRepository implements MutableConceptRepository {
   public constructor(private readonly options: FileRepositoryOptions) {}
 
   public async getProjectConcepts(projectId: string): Promise<ConceptRecord[]> {
@@ -32,9 +39,56 @@ export class FileConceptRepository implements ConceptRepository {
     return data.concepts.filter((concept) => wanted.has(concept.id));
   }
 
+  public async recordConceptProposal(record: ConceptProposalRecord): Promise<ConceptProposalRecord> {
+    const data = await this.loadProject(record.project_id);
+    const concept = {
+      ...record.concept,
+      status: record.concept.status ?? "candidate"
+    };
+    const existingIndex = data.concepts.findIndex((item) => item.id === concept.id);
+    if (existingIndex >= 0) {
+      data.concepts[existingIndex] = concept;
+    } else {
+      data.concepts.push(concept);
+    }
+
+    for (const relation of record.relations ?? []) {
+      if (!data.relations.some((item) => sameRelation(item, relation))) {
+        data.relations.push(relation);
+      }
+    }
+
+    const recorded = { ...record, concept };
+    await this.saveProject(record.project_id, data);
+    return recorded;
+  }
+
+  public async recordValidationDecision(
+    record: ConceptValidationDecisionRecord
+  ): Promise<ConceptValidationDecisionRecord> {
+    const data = await this.loadProject(record.project_id);
+    const recorded = {
+      ...record,
+      recorded_at: record.recorded_at ?? new Date().toISOString()
+    };
+    data.validation_decisions = [...(data.validation_decisions ?? []), recorded];
+    await this.saveProject(record.project_id, data);
+    return recorded;
+  }
+
   private async loadProject(projectId: string): Promise<FileProjectDocument> {
     const filePath = join(this.options.rootDir, `${projectId}.json`);
     const raw = await readFile(filePath, "utf8");
     return JSON.parse(raw) as FileProjectDocument;
   }
+
+  private async saveProject(projectId: string, data: FileProjectDocument): Promise<void> {
+    await mkdir(this.options.rootDir, { recursive: true });
+    const filePath = join(this.options.rootDir, `${projectId}.json`);
+    await writeFile(filePath, `${JSON.stringify(data, null, 2)}\n`, "utf8");
+  }
+}
+
+function sameRelation(left: RelationRecord, right: RelationRecord): boolean {
+  return left.from === right.from && left.type === right.type && left.to === right.to;
 }

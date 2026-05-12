@@ -7,6 +7,12 @@ import type {
   Severity
 } from "./types.js";
 
+export interface ConflictDetectionOptions {
+  sensitivity?: "low" | "medium" | "high";
+  includeEvidence?: boolean;
+  scopeConceptIds?: string[];
+}
+
 const FORWARD_SUPPORT_RELATION_TYPES = new Set([
   "depends-on",
   "uses",
@@ -34,9 +40,11 @@ const REVERSE_SUPPORT_RELATION_TYPES = new Set([
 
 export function detectConflictCandidates(
   concepts: ConceptRecord[],
-  relations: RelationRecord[]
+  relations: RelationRecord[],
+  options: ConflictDetectionOptions = {}
 ): ConflictCandidate[] {
   const candidates: ConflictCandidate[] = [];
+  const sensitivity = options.sensitivity ?? "medium";
   const byCanonicalName = new Map<string, ConceptRecord[]>();
   const byAlias = new Map<string, ConceptRecord[]>();
   const byId = new Map<string, ConceptRecord>();
@@ -101,7 +109,7 @@ export function detectConflictCandidates(
     for (let offset = index + 1; offset < concepts.length; offset += 1) {
       const left = concepts[index];
       const right = concepts[offset];
-      if (overlaps(left.boundary, right.boundary)) {
+      if (overlaps(left.boundary, right.boundary, sensitivity)) {
         candidates.push({
           candidate_id: `boundary:${left.id}:${right.id}`,
           conflict_type: "boundary-overlap",
@@ -182,7 +190,15 @@ export function detectConflictCandidates(
     }
   }
 
-  return dedupeCandidates(candidates);
+  const scopedCandidates = filterByScope(candidates, options.scopeConceptIds);
+  const dedupedCandidates = dedupeCandidates(scopedCandidates);
+  if (options.includeEvidence === false) {
+    return dedupedCandidates.map((candidate) => ({
+      ...candidate,
+      evidence_refs: []
+    }));
+  }
+  return dedupedCandidates;
 }
 
 export function computeHighestSeverity(candidates: ConflictCandidate[]): Severity {
@@ -219,6 +235,15 @@ function dedupeCandidates(candidates: ConflictCandidate[]): ConflictCandidate[] 
   });
 }
 
+function filterByScope(candidates: ConflictCandidate[], scopeConceptIds?: string[]): ConflictCandidate[] {
+  if (!scopeConceptIds?.length) {
+    return candidates;
+  }
+
+  const scope = new Set(scopeConceptIds);
+  return candidates.filter((candidate) => candidate.concept_ids.some((conceptId) => scope.has(conceptId)));
+}
+
 function isSupportingLayer(supportLayer: ConceptLayer, targetLayer: ConceptLayer): boolean {
   if (supportLayer === "cross-cutting" || targetLayer === "cross-cutting") {
     return true;
@@ -229,7 +254,7 @@ function isSupportingLayer(supportLayer: ConceptLayer, targetLayer: ConceptLayer
     order.indexOf(targetLayer as Exclude<ConceptLayer, "cross-cutting">);
 }
 
-function overlaps(leftBoundary: string, rightBoundary: string): boolean {
+function overlaps(leftBoundary: string, rightBoundary: string, sensitivity: "low" | "medium" | "high"): boolean {
   const leftTokens = tokenize(leftBoundary);
   const rightTokens = tokenize(rightBoundary);
   if (leftTokens.size === 0 || rightTokens.size === 0) {
@@ -242,7 +267,12 @@ function overlaps(leftBoundary: string, rightBoundary: string): boolean {
       overlapCount += 1;
     }
   }
-  return overlapCount >= 2;
+  const thresholdBySensitivity = {
+    low: 4,
+    medium: 3,
+    high: 2
+  } as const;
+  return overlapCount >= thresholdBySensitivity[sensitivity];
 }
 
 function tokenize(text: string): Set<string> {

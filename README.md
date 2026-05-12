@@ -1,5 +1,9 @@
 # concept-mcp-monorepo
 
+Concept MCP is a vendor-neutral MCP server for concept-governed AI workflows.
+It is not only a Codex skill: the root `SKILL.md` is a lightweight Codex wrapper,
+while the primary runtime is the MCP stdio server in `@concept-mcp/server`.
+
 Publishable monorepo layout for a vendor-neutral concept ontology MCP system.
 
 ## Packages
@@ -10,7 +14,7 @@ Publishable monorepo layout for a vendor-neutral concept ontology MCP system.
   - review contract schemas
   - concept-aware task preparation contracts
 - `@concept-mcp/server`
-  - MCP stdio server
+  - MCP stdio server and writable concept record tools
   - tool wiring
   - repository abstraction
 - `@concept-mcp/host-adapters`
@@ -37,6 +41,17 @@ npm run build
 ```bash
 npm run dev:server
 ```
+
+## Self concept registry
+
+The server includes a self-describing concept registry:
+
+```text
+packages/server/data/concept-skill.json
+```
+
+Use project id `concept-skill` with `CONCEPT_MCP_REPOSITORY=demo` to inspect the
+Concept MCP system with its own concept-governed workflow.
 
 ## Codex MCP setup
 
@@ -116,6 +131,10 @@ The tool returns:
   - propose missing concepts explicitly before using them
   - surface concept ambiguity instead of silently collapsing boundaries
   - implement only after concept ownership is clear
+
+`concept_conflict_validate` detects structural conflict candidates. Treat its
+output as candidate detection plus optional independent semantic review, not as
+the final architecture decision by itself.
 
 Recommended flow:
 

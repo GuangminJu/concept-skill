@@ -159,3 +159,37 @@ export interface ConceptGovernanceActivateOutput {
   }>;
   activation_prompt: string;
 }
+
+export interface ConceptProposalRecord {
+  project_id: string;
+  concept: ConceptRecord;
+  relations?: RelationRecord[];
+  rationale?: string;
+  proposed_by?: string;
+}
+
+export interface ConceptProposalRecordOutput {
+  recorded: true;
+  project_id: string;
+  concept_id: string;
+  relation_count: number;
+  record: ConceptProposalRecord;
+}
+
+export interface ConceptValidationDecisionRecord {
+  project_id: string;
+  validation_id: string;
+  candidate_id?: string;
+  judgment: "accepted-conflict" | "rejected-conflict" | "accepted-overlap" | "needs-human-decision";
+  rationale: string;
+  decided_by?: string;
+  recorded_at?: string;
+}
+
+export interface ConceptValidationDecisionRecordOutput {
+  recorded: true;
+  project_id: string;
+  validation_id: string;
+  candidate_id?: string;
+  record: ConceptValidationDecisionRecord;
+}

@@ -14,9 +14,14 @@ import type {
   ConceptConflictValidateOutput,
   ConceptGovernanceActivateInput,
   ConceptGovernanceActivateOutput,
+  ConceptProposalRecord,
+  ConceptProposalRecordOutput,
   ConceptRecord,
   ConceptTaskPrepareInput,
   ConceptTaskPrepareOutput,
+  ConceptValidationDecisionRecord,
+  ConceptValidationDecisionRecordOutput,
+  MutableConceptRepository,
   ConceptRepository,
   RelationRecord
 } from "@concept-mcp/core";
@@ -25,11 +30,18 @@ export async function conceptConflictValidate(
   repository: ConceptRepository,
   input: ConceptConflictValidateInput
 ): Promise<ConceptConflictValidateOutput> {
-  const selectedConcepts = input.concept_ids?.length
-    ? await repository.getConceptsByIds(input.project_id, input.concept_ids)
-    : await repository.getProjectConcepts(input.project_id);
+  const allConcepts = await repository.getProjectConcepts(input.project_id);
+  const requestedConceptIds = input.concept_ids?.length ? input.concept_ids : undefined;
+  const selectedConcepts = requestedConceptIds
+    ? allConcepts.filter((concept) => requestedConceptIds.includes(concept.id))
+    : allConcepts;
+  const validationConcepts = input.mode === "incremental" && requestedConceptIds ? allConcepts : selectedConcepts;
   const allRelations = await repository.getProjectRelations(input.project_id);
-  const candidates = detectConflictCandidates(selectedConcepts, allRelations).slice(0, input.max_candidates ?? 20);
+  const candidates = detectConflictCandidates(validationConcepts, allRelations, {
+    sensitivity: input.sensitivity,
+    includeEvidence: input.include_evidence,
+    scopeConceptIds: input.mode === "incremental" ? requestedConceptIds : undefined
+  }).slice(0, input.max_candidates ?? 20);
   const highestSeverity = computeHighestSeverity(candidates);
   const validationId = buildValidationId(input.project_id);
   const escalatedCandidates = candidates.filter((candidate) => shouldEscalate(candidate, input.agent_review_policy));
@@ -49,12 +61,12 @@ export async function conceptConflictValidate(
       ? [
           {
             action: "launch_independent_agent",
-            description: "Launch a separate agent/context using agent_review_request without rewriting concept IDs.",
+            description: "Launch a separate agent/context to review conflict candidates without rewriting concept IDs.",
             payload: { validation_id: validationId, candidate_ids: escalatedCandidates.map((item) => item.candidate_id) }
           },
           {
             action: "record_validation",
-            description: "Persist validation_id and candidate_ids before waiting for the independent review result."
+            description: "Persist the independent review decision with concept_validation_decision_record."
           }
         ]
       : [
@@ -64,8 +76,38 @@ export async function conceptConflictValidate(
           }
         ],
     agent_review_request: needAgentReview
-      ? buildAgentReviewRequest(input.project_id, validationId, selectedConcepts, allRelations, escalatedCandidates)
+      ? buildAgentReviewRequest(input.project_id, validationId, validationConcepts, allRelations, escalatedCandidates)
       : undefined
+  };
+}
+
+export async function conceptProposalRecord(
+  repository: ConceptRepository,
+  input: ConceptProposalRecord
+): Promise<ConceptProposalRecordOutput> {
+  const mutableRepository = asMutableRepository(repository);
+  const record = await mutableRepository.recordConceptProposal(input);
+  return {
+    recorded: true,
+    project_id: record.project_id,
+    concept_id: record.concept.id,
+    relation_count: record.relations?.length ?? 0,
+    record
+  };
+}
+
+export async function conceptValidationDecisionRecord(
+  repository: ConceptRepository,
+  input: ConceptValidationDecisionRecord
+): Promise<ConceptValidationDecisionRecordOutput> {
+  const mutableRepository = asMutableRepository(repository);
+  const record = await mutableRepository.recordValidationDecision(input);
+  return {
+    recorded: true,
+    project_id: record.project_id,
+    validation_id: record.validation_id,
+    candidate_id: record.candidate_id,
+    record
   };
 }
 
@@ -203,7 +245,7 @@ function buildAgentReviewRequest(
   return {
     protocol_version: "concept-conflict-review/v1",
     objective:
-      "Determine which conflict candidates are real conceptual conflicts, which are acceptable overlaps, and which require a human architecture decision.",
+      "Review structural conflict candidates and decide which are real conceptual conflicts, acceptable overlaps, false positives, or human decisions.",
     independence_requirement: "must_run_in_separate_context",
     recommended_agent_role: "concept-conflict-analyst",
     input_bundle: {
@@ -217,4 +259,16 @@ function buildAgentReviewRequest(
     analysis_prompt: analysisPromptTemplate,
     expected_output_schema: agentReviewOutputSchema
   };
+}
+
+function asMutableRepository(repository: ConceptRepository): MutableConceptRepository {
+  const candidate = repository as Partial<MutableConceptRepository>;
+  if (
+    typeof candidate.recordConceptProposal === "function" &&
+    typeof candidate.recordValidationDecision === "function"
+  ) {
+    return candidate as MutableConceptRepository;
+  }
+
+  throw new Error("Current concept repository is read-only. Use file or writable sqlite repository mode to record concepts or decisions.");
 }

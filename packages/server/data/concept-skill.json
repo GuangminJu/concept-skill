@@ -1,0 +1,119 @@
+{
+  "project_id": "concept-skill",
+  "concepts": [
+    {
+      "id": "concept-mcp-server",
+      "name": "Concept MCP Server",
+      "kind": "boundary",
+      "definition": "Stdio MCP server that exposes concept governance, task preparation, candidate detection, and record tools.",
+      "boundary": "MCP tool registration, request dispatch, repository selection, and structured tool responses.",
+      "layer": "interface",
+      "aliases": ["concept server", "concept-mcp"],
+      "status": "accepted",
+      "source_refs": ["source://packages/server/src/index.ts"],
+      "abstraction_level": "composite",
+      "supported_by": ["concept-repository", "concept-task-preparation", "conflict-candidate-detection", "concept-recording"]
+    },
+    {
+      "id": "concept-repository",
+      "name": "Concept Repository",
+      "kind": "boundary",
+      "definition": "Storage abstraction for project concepts, relations, proposed concepts, and validation decisions.",
+      "boundary": "Read and write access to concept records, concept relations, and review decision records.",
+      "layer": "data",
+      "aliases": ["ontology repository", "concept storage"],
+      "status": "accepted",
+      "source_refs": ["source://packages/core/src/repository.ts"],
+      "abstraction_level": "foundational"
+    },
+    {
+      "id": "concept-task-preparation",
+      "name": "Concept Task Preparation",
+      "kind": "action",
+      "definition": "Preparation step that packages relevant concepts, relations, and required workflow before design or implementation.",
+      "boundary": "Task-to-concept mapping prompt, concept snapshot, host actions, and expected output schema.",
+      "layer": "application",
+      "aliases": ["task prepare", "concept-aware task"],
+      "status": "accepted",
+      "source_refs": ["source://packages/server/src/tool.ts#conceptTaskPrepare"],
+      "abstraction_level": "composite",
+      "supported_by": ["concept-repository", "concept-governance-policy"]
+    },
+    {
+      "id": "concept-governance-policy",
+      "name": "Concept Governance Policy",
+      "kind": "boundary",
+      "definition": "Workflow policy that tells a host AI to read concept files first and keep design work inside explicit concept boundaries.",
+      "boundary": "Activation prompt, required workflow, and host actions for concept-governed mode.",
+      "layer": "application",
+      "aliases": ["governance activation", "concept-governed mode"],
+      "status": "accepted",
+      "source_refs": ["source://packages/core/src/concept-governance-contract.ts"],
+      "abstraction_level": "composite",
+      "supported_by": ["concept-repository"]
+    },
+    {
+      "id": "conflict-candidate-detection",
+      "name": "Conflict Candidate Detection",
+      "kind": "action",
+      "definition": "Structural and heuristic pass that finds possible concept identity, boundary, hierarchy, inflation, and cycle problems.",
+      "boundary": "Candidate generation, severity scoring, scope filtering, and evidence references before independent review.",
+      "layer": "application",
+      "aliases": ["conflict detection", "structural validation"],
+      "status": "accepted",
+      "source_refs": ["source://packages/core/src/conflict-detector.ts"],
+      "abstraction_level": "composite",
+      "supported_by": ["concept-repository"]
+    },
+    {
+      "id": "agent-review-request",
+      "name": "Agent Review Request",
+      "kind": "value-object",
+      "definition": "Portable request bundle for an independent host AI review of detected conflict candidates.",
+      "boundary": "Review objective, independence requirement, input bundle, analysis prompt, and expected schema.",
+      "layer": "interface",
+      "aliases": ["independent review request"],
+      "status": "accepted",
+      "source_refs": ["source://packages/core/src/review-contract.ts"],
+      "abstraction_level": "foundational"
+    },
+    {
+      "id": "concept-recording",
+      "name": "Concept Recording",
+      "kind": "action",
+      "definition": "Writable workflow for persisting proposed concepts and validation decisions back to the concept repository.",
+      "boundary": "Concept proposal records, optional relations, validation decisions, and recorded timestamps.",
+      "layer": "application",
+      "aliases": ["proposal recording", "decision recording"],
+      "status": "accepted",
+      "source_refs": ["source://packages/server/src/tool.ts#conceptProposalRecord"],
+      "abstraction_level": "composite",
+      "supported_by": ["concept-repository"]
+    },
+    {
+      "id": "host-adapter",
+      "name": "Host Adapter",
+      "kind": "boundary",
+      "definition": "Library API that renders concept task and conflict review requests for Claude, Codex, and Copilot hosts.",
+      "boundary": "Prompt rendering and host launch request shape, not MCP runtime agent launching.",
+      "layer": "interface",
+      "aliases": ["host launch adapter"],
+      "status": "accepted",
+      "source_refs": ["source://packages/host-adapters/src/index.ts"],
+      "abstraction_level": "composite",
+      "supported_by": ["agent-review-request", "concept-task-preparation"]
+    }
+  ],
+  "relations": [
+    { "from": "concept-mcp-server", "type": "uses", "to": "concept-repository" },
+    { "from": "concept-mcp-server", "type": "provides", "to": "concept-task-preparation" },
+    { "from": "concept-mcp-server", "type": "provides", "to": "conflict-candidate-detection" },
+    { "from": "concept-mcp-server", "type": "provides", "to": "concept-recording" },
+    { "from": "concept-task-preparation", "type": "obeys", "to": "concept-governance-policy" },
+    { "from": "conflict-candidate-detection", "type": "materializes-from", "to": "concept-repository" },
+    { "from": "agent-review-request", "type": "materializes-from", "to": "conflict-candidate-detection" },
+    { "from": "host-adapter", "type": "uses", "to": "agent-review-request" },
+    { "from": "host-adapter", "type": "uses", "to": "concept-task-preparation" },
+    { "from": "concept-recording", "type": "uses", "to": "concept-repository" }
+  ]
+}
