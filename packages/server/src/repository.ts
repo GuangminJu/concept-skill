@@ -11,12 +11,11 @@ interface DemoProjectFile {
 }
 
 export class DemoConceptRepository implements ConceptRepository {
-  private readonly dataPromise: Promise<Map<string, DemoProjectFile>>;
+  private readonly dataDir: string;
 
   public constructor() {
     const currentDir = dirname(fileURLToPath(import.meta.url));
-    const dataDir = join(currentDir, "..", "data");
-    this.dataPromise = loadProjects(dataDir);
+    this.dataDir = join(currentDir, "..", "data");
   }
 
   public async getProjectConcepts(projectId: string): Promise<ConceptRecord[]> {
@@ -36,7 +35,7 @@ export class DemoConceptRepository implements ConceptRepository {
   }
 
   private async loadProject(projectId: string): Promise<DemoProjectFile> {
-    const projects = await this.dataPromise;
+    const projects = await loadProjects(this.dataDir);
     const data = projects.get(projectId);
     if (!data) {
       const availableProjects = [...projects.keys()].sort().join(", ");
