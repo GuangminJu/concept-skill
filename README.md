@@ -38,6 +38,32 @@ npm run build
 npm run dev:server
 ```
 
+## Codex MCP setup
+
+This repository can be registered as a local Codex MCP server after dependencies
+are installed and the TypeScript packages are built.
+
+Use Node.js 22 LTS for the install/build step. Newer Node releases may require
+building `better-sqlite3` from source if a prebuilt binary is not available.
+
+```bash
+npm install
+npm run build
+```
+
+Example Codex config:
+
+```toml
+[mcp_servers.concept-skill]
+command = "node"
+args = ["D:/XXSimSource/xxsim2/concept-skill/packages/server/dist/index.js"]
+type = "stdio"
+enabled = true
+env = { CONCEPT_MCP_REPOSITORY = "demo" }
+```
+
+Restart Codex after updating the MCP config.
+
 ## Repository backends
 
 The server supports three repository modes:
