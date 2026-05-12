@@ -13,6 +13,7 @@ interface FileProjectDocument {
   project_id: string;
   concepts: ConceptRecord[];
   relations: RelationRecord[];
+  concept_proposals?: ConceptProposalRecord[];
   validation_decisions?: ConceptValidationDecisionRecord[];
 }
 
@@ -40,7 +41,7 @@ export class FileConceptRepository implements MutableConceptRepository {
   }
 
   public async recordConceptProposal(record: ConceptProposalRecord): Promise<ConceptProposalRecord> {
-    const data = await this.loadProject(record.project_id);
+    const data = await this.loadOrCreateProject(record.project_id);
     const concept = {
       ...record.concept,
       status: record.concept.status ?? "candidate"
@@ -59,6 +60,7 @@ export class FileConceptRepository implements MutableConceptRepository {
     }
 
     const recorded = { ...record, concept };
+    data.concept_proposals = [...(data.concept_proposals ?? []), recorded];
     await this.saveProject(record.project_id, data);
     return recorded;
   }
@@ -66,7 +68,7 @@ export class FileConceptRepository implements MutableConceptRepository {
   public async recordValidationDecision(
     record: ConceptValidationDecisionRecord
   ): Promise<ConceptValidationDecisionRecord> {
-    const data = await this.loadProject(record.project_id);
+    const data = await this.loadOrCreateProject(record.project_id);
     const recorded = {
       ...record,
       recorded_at: record.recorded_at ?? new Date().toISOString()
@@ -80,6 +82,21 @@ export class FileConceptRepository implements MutableConceptRepository {
     const filePath = join(this.options.rootDir, `${projectId}.json`);
     const raw = await readFile(filePath, "utf8");
     return JSON.parse(raw) as FileProjectDocument;
+  }
+
+  private async loadOrCreateProject(projectId: string): Promise<FileProjectDocument> {
+    try {
+      return await this.loadProject(projectId);
+    } catch (error: unknown) {
+      if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+        return {
+          project_id: projectId,
+          concepts: [],
+          relations: []
+        };
+      }
+      throw error;
+    }
   }
 
   private async saveProject(projectId: string, data: FileProjectDocument): Promise<void> {

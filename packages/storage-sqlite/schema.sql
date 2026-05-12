@@ -25,6 +25,19 @@ CREATE TABLE relations (
 CREATE INDEX relations_project_from_idx ON relations (project_id, from_id);
 CREATE INDEX relations_project_to_idx ON relations (project_id, to_id);
 
+CREATE TABLE concept_proposals (
+    project_id TEXT NOT NULL,
+    concept_id TEXT NOT NULL,
+    concept_json TEXT NOT NULL,
+    relations_json TEXT NOT NULL DEFAULT '[]',
+    rationale TEXT,
+    proposed_by TEXT,
+    recorded_at TEXT NOT NULL,
+    PRIMARY KEY (project_id, concept_id, recorded_at)
+);
+
+CREATE INDEX concept_proposals_project_idx ON concept_proposals (project_id, concept_id);
+
 CREATE TABLE validation_decisions (
     project_id TEXT NOT NULL,
     validation_id TEXT NOT NULL,

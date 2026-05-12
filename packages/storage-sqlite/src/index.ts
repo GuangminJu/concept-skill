@@ -42,6 +42,9 @@ export class SqliteConceptRepository implements MutableConceptRepository {
     this.db = new Database(options.databasePath, {
       readonly: this.readonly
     });
+    if (!this.readonly) {
+      this.ensureSchema();
+    }
   }
 
   public async getProjectConcepts(projectId: string): Promise<ConceptRecord[]> {
@@ -136,7 +139,24 @@ export class SqliteConceptRepository implements MutableConceptRepository {
       insertRelation.run(record.project_id, relation.from, relation.type, relation.to);
     }
 
-    return { ...record, concept };
+    const recorded = { ...record, concept };
+    this.db
+      .prepare(
+        `INSERT INTO concept_proposals (
+           project_id, concept_id, concept_json, relations_json, rationale, proposed_by, recorded_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run(
+        recorded.project_id,
+        recorded.concept.id,
+        JSON.stringify(recorded.concept),
+        JSON.stringify(recorded.relations ?? []),
+        recorded.rationale ?? null,
+        recorded.proposed_by ?? null,
+        new Date().toISOString()
+      );
+
+    return recorded;
   }
 
   public async recordValidationDecision(
@@ -185,5 +205,62 @@ export class SqliteConceptRepository implements MutableConceptRepository {
     if (this.readonly) {
       throw new Error("SQLite repository is readonly. Set CONCEPT_MCP_SQLITE_READONLY=false to record concepts or decisions.");
     }
+  }
+
+  private ensureSchema(): void {
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS concepts (
+        project_id TEXT NOT NULL,
+        id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        definition TEXT NOT NULL,
+        boundary TEXT NOT NULL,
+        layer TEXT NOT NULL,
+        aliases_json TEXT NOT NULL DEFAULT '[]',
+        status TEXT,
+        source_refs_json TEXT NOT NULL DEFAULT '[]',
+        abstraction_level TEXT,
+        supported_by_json TEXT NOT NULL DEFAULT '[]',
+        PRIMARY KEY (project_id, id)
+      );
+
+      CREATE TABLE IF NOT EXISTS relations (
+        project_id TEXT NOT NULL,
+        from_id TEXT NOT NULL,
+        type TEXT NOT NULL,
+        to_id TEXT NOT NULL,
+        PRIMARY KEY (project_id, from_id, type, to_id)
+      );
+
+      CREATE INDEX IF NOT EXISTS relations_project_from_idx ON relations (project_id, from_id);
+      CREATE INDEX IF NOT EXISTS relations_project_to_idx ON relations (project_id, to_id);
+
+      CREATE TABLE IF NOT EXISTS concept_proposals (
+        project_id TEXT NOT NULL,
+        concept_id TEXT NOT NULL,
+        concept_json TEXT NOT NULL,
+        relations_json TEXT NOT NULL DEFAULT '[]',
+        rationale TEXT,
+        proposed_by TEXT,
+        recorded_at TEXT NOT NULL,
+        PRIMARY KEY (project_id, concept_id, recorded_at)
+      );
+
+      CREATE INDEX IF NOT EXISTS concept_proposals_project_idx ON concept_proposals (project_id, concept_id);
+
+      CREATE TABLE IF NOT EXISTS validation_decisions (
+        project_id TEXT NOT NULL,
+        validation_id TEXT NOT NULL,
+        candidate_id TEXT,
+        judgment TEXT NOT NULL,
+        rationale TEXT NOT NULL,
+        decided_by TEXT,
+        recorded_at TEXT NOT NULL,
+        PRIMARY KEY (project_id, validation_id, candidate_id, recorded_at)
+      );
+
+      CREATE INDEX IF NOT EXISTS validation_decisions_project_idx ON validation_decisions (project_id, validation_id);
+    `);
   }
 }
