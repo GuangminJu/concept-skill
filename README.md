@@ -53,6 +53,11 @@ packages/server/data/concept-skill.json
 Use project id `concept-skill` with `CONCEPT_MCP_REPOSITORY=demo` to inspect the
 Concept MCP system with its own concept-governed workflow.
 
+The root `SKILL.md` also defines host-side instructions for:
+
+- new project concept inventory
+- concept authenticity checks before accepting a proposed concept
+
 ## Codex MCP setup
 
 This repository can be registered as a local Codex MCP server after dependencies

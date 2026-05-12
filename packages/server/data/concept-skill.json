@@ -102,6 +102,32 @@
       "source_refs": ["source://packages/host-adapters/src/index.ts"],
       "abstraction_level": "composite",
       "supported_by": ["agent-review-request", "concept-task-preparation"]
+    },
+    {
+      "id": "concept-inventory",
+      "name": "Concept Inventory",
+      "kind": "action",
+      "definition": "Discovery workflow that extracts and classifies candidate concepts for a project before a repository is mature.",
+      "boundary": "Candidate discovery, canonical naming, source evidence, initial status assignment, and relation drafting.",
+      "layer": "application",
+      "aliases": ["concept census", "project concept inventory"],
+      "status": "accepted",
+      "source_refs": ["source://SKILL.md#New Project Concept Inventory"],
+      "abstraction_level": "composite",
+      "supported_by": ["concept-repository", "concept-recording", "concept-governance-policy"]
+    },
+    {
+      "id": "concept-authenticity-check",
+      "name": "Concept Authenticity Check",
+      "kind": "action",
+      "definition": "Review workflow that distinguishes real project concepts from aliases, implementation details, prompt inventions, and over-specialized labels.",
+      "boundary": "Source evidence, ownership, lifecycle, boundary, support, duplication, and specialization checks before concept acceptance.",
+      "layer": "application",
+      "aliases": ["concept reality check", "concept truth check"],
+      "status": "accepted",
+      "source_refs": ["source://SKILL.md#Concept Authenticity Check"],
+      "abstraction_level": "composite",
+      "supported_by": ["concept-repository", "conflict-candidate-detection"]
     }
   ],
   "relations": [
@@ -114,6 +140,11 @@
     { "from": "agent-review-request", "type": "materializes-from", "to": "conflict-candidate-detection" },
     { "from": "host-adapter", "type": "uses", "to": "agent-review-request" },
     { "from": "host-adapter", "type": "uses", "to": "concept-task-preparation" },
-    { "from": "concept-recording", "type": "uses", "to": "concept-repository" }
+    { "from": "concept-recording", "type": "uses", "to": "concept-repository" },
+    { "from": "concept-inventory", "type": "uses", "to": "concept-repository" },
+    { "from": "concept-inventory", "type": "uses", "to": "concept-recording" },
+    { "from": "concept-inventory", "type": "obeys", "to": "concept-governance-policy" },
+    { "from": "concept-authenticity-check", "type": "uses", "to": "conflict-candidate-detection" },
+    { "from": "concept-authenticity-check", "type": "uses", "to": "concept-repository" }
   ]
 }
